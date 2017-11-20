@@ -283,8 +283,8 @@ if ( jsPDF && THREE && !('PDFRenderer' in THREE) ) {
 
 			projector = new THREE.Projector();
 
-			clipRect = new THREE.Rectangle();
-			bboxRect = new THREE.Rectangle();
+			clipRect = new THREE.Box2();
+			bboxRect = new THREE.Box2();
 
 			color = new THREE.Color();
 			ambientLight = new THREE.Color();
@@ -324,8 +324,6 @@ if ( jsPDF && THREE && !('PDFRenderer' in THREE) ) {
 			
 			setSize : function( w, h ) {
 
-				// TODO: this only sets size of element, not PDF itself
-
 				width = w; 
 				height = h;
 				widthHalf = width / 2; 
@@ -334,9 +332,13 @@ if ( jsPDF && THREE && !('PDFRenderer' in THREE) ) {
 				iframe.setAttribute( 'width',  width );
 				iframe.setAttribute( 'height', height );
 
-				pdf = new jsPDF( (width > height ? 'landscape' : 'portrait'), 'pt', [w, h] );
+				pdf = new jsPDF( {
+					orientation: width > height ? 'landscape' : 'portrait',
+					unit: 'px',
+					format: [w, h]
+				});
 
-				clipRect.set( 0, 0, width, height );
+				clipRect.set( new THREE.Vector2(0, 0), new THREE.Vector2(width, height) );
 			},
 			
 			clear : function () {
@@ -377,9 +379,9 @@ if ( jsPDF && THREE && !('PDFRenderer' in THREE) ) {
 
 					if ( material === undefined || material.visible === false ) continue;
 
-					bboxRect.empty();
+					bboxRect.makeEmpty();
 
-					if ( element instanceof THREE.RenderableParticle ) {
+					/*if ( element instanceof THREE.RenderableParticle ) {
 
 						vec1 = element;
 
@@ -387,23 +389,22 @@ if ( jsPDF && THREE && !('PDFRenderer' in THREE) ) {
 
 						renderParticle( vec1, element, material, scene );
 
-					} else if ( element instanceof THREE.RenderableLine ) {
+					} else */ if ( element instanceof THREE.RenderableLine ) {
 
 						vec1 = element.v1; vec2 = element.v2;
 
 						positionScreenToPage( vec1.positionScreen );
 						positionScreenToPage( vec2.positionScreen );
 
-						bboxRect.addPoint( vec1.positionScreen.x, vec1.positionScreen.y );
-						bboxRect.addPoint( vec2.positionScreen.x, vec2.positionScreen.y );
+						bboxRect.setFromPoints( [ vec1.positionScreen, vec2.positionScreen ] );
 
-						if ( !clipRect.intersects( bboxRect ) ) {
+						if ( !clipRect.intersectsBox( bboxRect ) ) {
 							continue;
 						}
 
 						renderLine( vec1, vec2, element, material, scene );
 
-					} else if ( element instanceof THREE.RenderableFace3 ) {
+					} else if ( element instanceof THREE.RenderableFace ) {
 
 						vec1 = element.v1; vec2 = element.v2; vec3 = element.v3;
 
@@ -411,17 +412,15 @@ if ( jsPDF && THREE && !('PDFRenderer' in THREE) ) {
 						positionScreenToPage( vec2.positionScreen );
 						positionScreenToPage( vec3.positionScreen );
 
-						bboxRect.addPoint( vec1.positionScreen.x, vec1.positionScreen.y );
-						bboxRect.addPoint( vec2.positionScreen.x, vec2.positionScreen.y );
-						bboxRect.addPoint( vec3.positionScreen.x, vec3.positionScreen.y );
+						bboxRect.setFromPoints( [ vec1.positionScreen, vec2.positionScreen, vec3.positionScreen ] );
 
-						if ( !clipRect.intersects( bboxRect ) ) {
+						if ( !clipRect.intersectsBox( bboxRect ) ) {
 							continue;
 						}
 
 						renderFace3( vec1, vec2, vec3, element, material, scene );
 
-					} else if ( element instanceof THREE.RenderableFace4 ) {
+					} /*else if ( element instanceof THREE.RenderableFace4 ) {
 
 						vec1 = element.v1; vec2 = element.v2; vec3 = element.v3; vec4 = element.v4;
 
@@ -430,19 +429,14 @@ if ( jsPDF && THREE && !('PDFRenderer' in THREE) ) {
 						positionScreenToPage( vec3.positionScreen );
 						positionScreenToPage( vec4.positionScreen );
 
-						bboxRect.addPoint( vec1.positionScreen.x, vec1.positionScreen.y );
-						bboxRect.addPoint( vec2.positionScreen.x, vec2.positionScreen.y );
-						bboxRect.addPoint( vec3.positionScreen.x, vec3.positionScreen.y );
-						bboxRect.addPoint( vec4.positionScreen.x, vec4.positionScreen.y );
+						bboxRect.setFromPoints( [ vec1.positionScreen, vec2.positionScreen, vec3.positionScreen, vec4.positionScreen ] );
 
-						if ( !clipRect.intersects( bboxRect) ) {
+						if ( !clipRect.intersectsBox( bboxRect) ) {
 							continue;
 						}
 
 						renderFace4( vec1, vec2, vec3, vec4, element, material, scene );
-
-					}
-
+					}*/
 				}
 
 				iframe.src = pdf.output('datauristring');
